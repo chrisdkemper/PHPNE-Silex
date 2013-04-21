@@ -1,24 +1,46 @@
-<!DOCTYPE HTML>
-<html lang="en-US">
-<head>
-	<meta charset="UTF-8">
-	<title>Vagrant works man</title>
-	<style type="text/css">
-		body{
-			width: 100%;
-			max-width: 500px;
-			text-align: center;
-			margin: 0 auto;
-		}
-		
-		img{
-			max-width: 100%;
-		}
-	</style>
-</head>
-<body>
-	<h1>Vagrant is running</h1>
-	<p>You can delete this and start adding in your own files now.</p>
-	<img src="http://1.bp.blogspot.com/-Na_OV_VJlQE/Tdl7Rwqe6OI/AAAAAAAABpo/ryRr5hI63Ho/s1600/fuck-yeah.jpg" />
-</body>
-</html>
+<?php
+
+use 
+	Symfony\Component\HttpFoundation\Request,
+	Symfony\Component\HttpFoundation\Response;
+
+$app = include __DIR__ . '/../app/bootstrap.php';
+
+$app->post('/user', function (Request $request) use ($app) {
+    $user = array(
+    	'email' => $request->get('email'),
+    	'name' => $request->get('name')
+    );
+
+    $app['db']->insert('user', $user);
+
+    return new Response("User " . $app['db']->lastInsertId() . " created", 201);
+});
+
+$app->get('{id}', function (Request $request, $id) use ($app) {
+    $sql = "SELECT * FROM user WHERE id = ?";
+    $post = $app['db']->fetchAssoc($sql, array((int) $id));
+
+    return $app->json($post, 201);
+});
+
+$app->delete('/user/{id}', function (Request $request, $id) use ($app) {
+    $sql = "DELETE FROM user WHERE id = ?";
+    $app['db']->executeUpdate($sql, array((int) $id));
+
+    return new Response("User " . $id . " deleted", 303);
+});
+
+$app->put('/user/{id}', function (Request $request, $id) use ($app) {
+    $sql = "UPDATE user SET email = ?, name = ? WHERE id = ?";
+
+    $app['db']->executeUpdate($sql, array(
+    	$request->get('email'),
+    	$request->get('name'),
+    	(int) $id)
+    );
+
+    return new Response("User " . $id . " updated", 303);
+});
+
+$app->run();
